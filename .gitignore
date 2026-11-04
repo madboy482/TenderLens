@@ -18,6 +18,7 @@ backend/data/uploads/*
 backend/data/processed/*
 !backend/data/uploads/.gitkeep
 !backend/data/processed/.gitkeep
+backend/*.egg-info/
 
 frontend/node_modules/
 frontend/dist/
