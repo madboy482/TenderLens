@@ -1,0 +1,391 @@
+TENDERLENS
+Industry-Relevant AI Project Report Content
+
+Tender compliance assistant for Indian MSMEs
+
+Project overview
+
+TenderLens is a human-reviewed AI-assisted tender compliance system designed for Indian MSMEs. Government and corporate tenders often require companies to read long PDF documents, identify eligibility conditions, collect supporting evidence, check document validity, compare financial thresholds, track amendments, and prepare compliance reports. This work is usually manual, time-consuming, and prone to missed requirements.
+
+TenderLens supports this workflow by:
+1. Uploading and extracting tender PDFs.
+2. Detecting possible compliance clauses.
+3. Converting clauses into structured requirements.
+4. Uploading company evidence documents.
+5. Finding candidate evidence for each requirement.
+6. Applying deterministic checks for dates and financial thresholds.
+7. Allowing human reviewers to accept, reject, or annotate evidence.
+8. Comparing amendments with the original tender.
+9. Marking affected requirements for re-review.
+10. Generating JSON, CSV, and PDF compliance reports.
+
+The system provides explainable suggestions and does not make an uncontrolled legal or eligibility decision.
+
+5. TECHNOLOGY STACK
+
+5.1 Technology stack
+
+Programming language: Python 3.10.11. Python was selected because it has a mature ecosystem for NLP, PDF processing, APIs, testing, and data processing. Alternatives considered were Java and Node.js.
+
+LLM: The current MVP does not require a paid LLM. It uses a deterministic mock provider behind a provider-neutral interface. This makes the application free, reproducible, offline-capable, and easy to test. Future alternatives include Ollama, Llama, Mistral, Gemma, OpenAI, Gemini, and Claude.
+
+LLM provider boundary: A custom provider interface with structured Pydantic output validation is implemented. It allows a future local LLM to be added without changing the business logic.
+
+Hosting and inference: Local application execution is used in the MVP. This avoids API charges and prevents tender documents from being sent to third-party services. Future alternatives include Ollama, Groq, or Hugging Face Inference.
+
+Embedding model: Not used in the current MVP. Retrieval currently uses explainable lexical term overlap. Future alternatives include multilingual-e5, BGE-M3, Sentence Transformers, and LaBSE.
+
+Vector database: Not used in the current MVP. This avoids unnecessary infrastructure. Future alternatives include FAISS, ChromaDB, Qdrant, and pgvector.
+
+RAG/orchestration framework: Not used. Retrieval is implemented directly so that its behavior is transparent and easy to explain. Alternatives considered include LangChain, LlamaIndex, and Haystack.
+
+Agent framework: Not used. TenderLens is a controlled workflow rather than an autonomous agent. Alternatives considered include LangGraph, CrewAI, and AutoGen.
+
+Indian-language tools: Not used in the current English-focused MVP. Future alternatives include IndicTrans2, AI4Bharat IndicNLP, Bhashini, and Sarvam tools.
+
+Speech: Not used because the current system accepts PDF documents. Future alternatives include Whisper, IndicWhisper, and IndicConformer.
+
+OCR and document parsing: PyMuPDF 1.28.2 is used for local PDF validation, page-level text extraction, and PDF report generation. It was chosen because it is free, fast, and preserves page references. Alternatives include Tesseract, PaddleOCR, and Unstructured.
+
+Frontend: React 19, TypeScript 6, and Vite 8.3.5. This combination provides a responsive, type-safe web interface and fast development. Alternatives considered include Streamlit, Gradio, and Angular.
+
+Backend/API: FastAPI 0.162.0. FastAPI was selected for its typed request validation, automatic OpenAPI documentation, lightweight structure, and strong Python integration. Alternatives considered include Flask, Django, and Node.js.
+
+Database access: SQLAlchemy 2.0.55. It provides a clean database abstraction and portability between SQLite and PostgreSQL.
+
+Database: SQLite is used for local development because it is free, lightweight, persistent, and requires no separate server. The data layer is designed to remain portable to PostgreSQL for deployment.
+
+Validation: Pydantic and Pydantic Settings validate API payloads, structured provider output, and environment configuration.
+
+Testing: Pytest 8.4.2, pytest-asyncio, Vitest 3.2.7, and TypeScript build checks.
+
+Evaluation: A custom deterministic evaluation fixture measures retrieval classification and rule-engine accuracy without paid APIs.
+
+Deployment: The MVP is local-first. The architecture supports a future React deployment, FastAPI service, and PostgreSQL database on a free or low-cost platform.
+
+Hardware used: Windows development environment, Python 3.10.11, Node.js 22.18.0, local CPU execution, and no GPU requirement.
+
+Cost: The current local MVP has no mandatory API, model, database, or reporting cost. A production deployment cost depends on hosting, storage, usage, and whether a local or hosted model is selected.
+
+6. SYSTEM ARCHITECTURE AND METHODOLOGY
+
+6.1 Architecture
+
+The system follows a local-first modular architecture:
+
+React + TypeScript frontend
+        |
+        | HTTP/JSON
+        v
+FastAPI REST API (/api/v1)
+        |
+        v
+Application services
+        |
+        +-- Document service
+        +-- Evidence service
+        +-- Amendment service
+        +-- Report service
+        |
+        +-- PDF processing and page extraction with PyMuPDF
+        +-- NLP components for chunking and requirement extraction
+        +-- Lexical evidence retrieval
+        +-- Deterministic date and financial rules
+        |
+        +-- SQLAlchemy persistence
+        |       +-- SQLite locally
+        |       +-- PostgreSQL-compatible design
+        |
+        +-- Private UUID-based document storage
+
+6.2 Workflow
+
+1. The user creates a tender workspace.
+2. The user uploads a tender PDF.
+3. The backend validates and privately stores the document.
+4. PyMuPDF extracts text page by page.
+5. The system creates source-linked chunks and detects candidate clauses.
+6. Candidate clauses are converted into structured requirements.
+7. The user reviews and confirms requirements.
+8. The user uploads company evidence PDFs.
+9. Evidence pages are chunked and compared with requirements.
+10. Deterministic rules check amounts, dates, expiry, and ambiguity.
+11. The user accepts, rejects, or annotates candidate evidence.
+12. The user may upload an amendment.
+13. Original and amendment clauses are compared.
+14. Affected requirements are marked for re-review.
+15. The system creates a JSON, CSV, or PDF compliance report.
+
+6.3 Data pipeline
+
+Input PDFs are validated, stored under generated UUID filenames, and extracted page by page. Text is divided into bounded chunks. Candidate tender clauses are identified using terms such as eligibility, turnover, certificate, deadline, shall, must, required, and mandatory. Requirement extraction identifies categories, mandatory status, and Indian currency amounts. Evidence documents are processed separately. Evidence retrieval uses normalized term overlap rather than treating similarity as proof. Rules then check dates and thresholds. All uncertain outcomes remain available for human review.
+
+The current MVP does not use external datasets or paid APIs. User-provided tender and evidence documents are processed locally.
+
+6.4 Agent design
+
+TenderLens is not an autonomous agent system. It intentionally uses a controlled workflow with explicit human approval. This design is suitable for compliance because actions such as accepting evidence and confirming requirements should not occur without user review.
+
+6.5 Indian-language handling
+
+The current MVP focuses on English tender PDFs. Indian-language support is planned through OCR, multilingual embeddings, translation tools, and local Indian-language models. No unsupported language capability is claimed in this version.
+
+7. INPUT AND OUTPUT SPECIFICATION
+
+7.1 Inputs
+
+Workspace title: text entered by the user, for example "GeM Tender Review".
+
+Tender document: PDF uploaded through the web interface. The current workflow is optimized for text-based PDFs. Scanned pages are detected and marked for OCR review.
+
+Evidence document: company PDF such as a GST certificate, turnover certificate, quality certificate, experience certificate, or registration document.
+
+Amendment document: revised tender PDF uploaded separately from the original tender.
+
+Requirement review: API request containing confirmed status and an optional reviewer note.
+
+Evidence review: API request containing accepted, rejected, or needs_review status and an optional reviewer note.
+
+7.2 Outputs
+
+Health response: JSON status confirming that the backend is available.
+
+Document response: document ID, page count, processing status, warnings, extracted pages, and source-linked chunks.
+
+Requirement response: original clause, normalized text, category, requirement type, mandatory status, extracted value, normalized amount, source page, confidence, suggested status, review status, and review note.
+
+Evidence match response: retrieval score, matched terms, evidence document, evidence page, source snippet, suggested status, rule reason, user status, and reviewer note.
+
+Amendment response: original text, amended text, source pages, change type, review status, and affected requirements.
+
+Compliance summary: counts and requirement-level rows containing status, evidence, source page, rule reason, and review state.
+
+CSV report: spreadsheet-compatible requirement-level report.
+
+PDF report: human-readable compliance report generated locally with PyMuPDF.
+
+7.3 Sample test cases
+
+1. Input: "The bidder must submit a valid GST certificate." Evidence: "GST certificate number GST-123 is valid." Expected: candidate evidence is retrieved.
+
+2. Input: requirement turnover INR 5 lakh; evidence turnover INR 7 lakh. Expected: amount meets threshold and rule suggests evidence_found.
+
+3. Edge case: requirement turnover INR 10 lakh; evidence turnover INR 7 lakh. Expected: system does not mark compliant and returns needs_review.
+
+4. Edge case: certificate expired in 2020. Expected: needs_review with an expiry explanation.
+
+5. Amendment changes INR 5 lakh to INR 10 lakh. Expected: affected requirement becomes re_review_required.
+
+8. IMPLEMENTATION AND CODE
+
+8.1 Repository and setup
+
+Project root: D:/TenderLens.
+
+Recommended submission repository: https://github.com/<your-username>/TenderLens.
+
+Backend setup:
+1. Open the backend directory.
+2. Create and activate a Python virtual environment.
+3. Install dependencies with: python -m pip install -e ".[dev]".
+4. Copy .env.example to .env.
+5. Start with: uvicorn app.main:app --reload.
+
+Frontend setup:
+1. Open the frontend directory.
+2. Install dependencies with npm install.
+3. Copy .env.example to .env.
+4. Start with npm run dev.
+
+No paid API keys are required. Secrets should never be committed.
+
+8.2 Folder structure
+
+TenderLens/
+  backend/
+    app/
+      api/v1/endpoints/
+      core/
+      db/models/
+      llm/
+      nlp/
+      schemas/
+      services/
+      evaluation.py
+    tests/
+    pyproject.toml
+  frontend/
+    src/
+      api/client.ts
+      App.tsx
+      App.css
+  docs/
+    architecture.md
+    api-contracts.md
+    evaluation.md
+  README.md
+  .gitignore
+
+8.3 Key modules
+
+Document ingestion: backend/app/services/document_service.py. Validates PDFs, stores them privately, extracts pages, creates chunks, and creates candidate requirements for tender documents.
+
+Requirement extraction: backend/app/nlp/requirement_extraction.py. Detects candidate requirements, assigns categories and mandatory status, and extracts Indian currency values.
+
+Lexical retrieval: backend/app/nlp/retrieval.py. Tokenizes requirement and evidence text, removes stop words, and calculates matched-term overlap.
+
+Rules engine: backend/app/nlp/rules_engine.py. Parses Indian currency amounts, dates, expiry statements, and threshold comparisons. Ambiguous results remain needs_review.
+
+Evidence service: backend/app/services/evidence_service.py. Retrieves candidate evidence, applies rules, and persists EvidenceMatch records.
+
+Amendment analysis: backend/app/nlp/amendment_diff.py and backend/app/services/amendment_service.py. Compares clauses and marks affected requirements for re-review.
+
+Report service: backend/app/services/report_service.py. Builds compliance summaries and renders PDF reports.
+
+Frontend: frontend/src/App.tsx. Provides tender upload, extraction preview, requirement review, evidence upload, evidence review, amendment comparison, and report download controls.
+
+8.4 LLM boundary and prompts
+
+The current MVP uses a deterministic mock provider rather than a paid model. The provider interface validates structured output with Pydantic and restricts references to source chunks supplied by the application. This prevents unsupported source citations.
+
+If a local LLM is added later, the same provider boundary can be used with Ollama or another free/open-source inference option.
+
+8.5 Challenges and solutions
+
+PDF extraction challenge: Some documents are scanned. Solution: extract page text and return OCR-needed warnings instead of silently reporting success.
+
+False compliance challenge: Keyword similarity cannot prove compliance. Solution: preserve source evidence, separate suggestions from user decisions, and return needs_review for uncertainty.
+
+Financial normalization challenge: Indian amounts use lakh and crore notation. Solution: parse INR, lakh, crore, and comma-formatted values into normalized numeric INR.
+
+Amendment challenge: A revised tender can invalidate a completed review. Solution: store amendments separately, compare candidate clauses, and mark impacted requirements for re-review.
+
+Deployment challenge: SQLite is convenient locally but free hosted storage may not persist reliably. Solution: use SQLAlchemy and keep the schema portable to PostgreSQL.
+
+9. OUTPUT SCREENSHOTS
+
+Screenshots must be captured from the running system before final submission. The report template requires at least six screenshots and requires the student name or roll number to be visible in at least one.
+
+Recommended screenshots:
+
+Figure 9.1: Main TenderLens interface. Input: workspace name and tender PDF.
+
+Figure 9.2: Extraction preview. Input: uploaded tender PDF. Show candidate clauses and page references.
+
+Figure 9.3: Requirement review queue. Show categories, source clauses, extracted values, and review status.
+
+Figure 9.4: Evidence retrieval. Show evidence document, source page, retrieval score, rule status, and rule reason.
+
+Figure 9.5: Human evidence review. Show accepted/rejected controls and review annotation.
+
+Figure 9.6: Amendment comparison. Show old clause, new clause, change type, and re-review status.
+
+Figure 9.7: Compliance report panel. Show compliant, needs_review, gaps, and not_assessed counts.
+
+Figure 9.8: Downloaded PDF or CSV report.
+
+10. EVALUATION AND RESULTS
+
+10.1 Current test set
+
+The implementation includes a deterministic six-case evaluation fixture in backend/app/evaluation.py. It covers GST certificate matching, successful turnover threshold, turnover shortfall, unrelated evidence, expired certificate, and ambiguous financial evidence.
+
+The fixture is a baseline rather than a final production evaluation. The report template recommends 30 to 50 unseen test cases. The final submission should expand the fixture using anonymized tender and evidence examples.
+
+10.2 Metrics
+
+Confident retrieval accuracy measures whether evidence is correctly classified as crossing the conservative retrieval threshold of 0.5.
+
+Rule accuracy measures whether the deterministic rules engine returns the expected evidence_found or needs_review status.
+
+Recommended additional metrics for the final report include precision, recall, F1 score, retrieval hit rate, response time, human-review agreement, false-positive count, false-negative count, and cost per reviewed tender.
+
+10.3 Current results
+
+Evaluation cases: 6.
+
+Confident retrieval accuracy: 100%.
+
+Rule accuracy: 100%.
+
+Paid API cost: 0 rupees.
+
+GPU requirement: none.
+
+These results should be described as a small deterministic baseline and not as proof of production-level generalization.
+
+10.4 Error analysis
+
+Potential false retrieval occurs when generic words such as valid or certificate overlap without satisfying the requirement. Missing retrieval occurs when tender and evidence documents use different terminology. Financial evidence may be ambiguous when it lacks a relevant period or amount. A date may be an issue date instead of an expiry date. Amendment formatting changes may appear to be substantive changes and require human confirmation.
+
+10.5 User feedback
+
+Formal user feedback has not yet been collected. Before final submission, test with MSME owners, tender preparation staff, procurement professionals, or faculty reviewers. Ask whether requirements are understandable, source pages are useful, evidence matching reduces work, explanations are clear, and the system is trustworthy with human review.
+
+11. INDUSTRY IMPACT, DEPLOYMENT AND FUTURE WORK
+
+11.1 Industry impact
+
+Target sector: government procurement, corporate procurement, tender preparation, and Indian MSME bidding.
+
+End users: MSME owners, bid managers, tender consultants, compliance teams, and procurement support staff.
+
+Before TenderLens, users manually read tender PDFs, maintain spreadsheets, search evidence files, compare financial values, check certificate dates, track amendments, and prepare reports.
+
+After TenderLens, candidate clauses are surfaced automatically, requirements retain source pages, evidence snippets are ranked, amounts are normalized, expiry dates are checked, amendments are compared, and reports are generated.
+
+Impact comparison:
+
+Manual requirement discovery -> source-linked candidate clauses.
+
+Manual evidence searching -> ranked candidate evidence snippets.
+
+Manual financial comparison -> normalized INR threshold checks.
+
+Manual certificate checking -> conservative date and expiry rules.
+
+Manual amendment tracking -> changed-clause analysis and re-review flags.
+
+Manual report preparation -> JSON, CSV, and PDF reports.
+
+Unexplained automation -> source text, rule reason, and reviewer decision.
+
+11.2 Deployment readiness
+
+Cloud deployment: React can be hosted on a frontend platform, FastAPI can run on a backend service, PostgreSQL can provide persistent storage, and object storage can hold uploaded files.
+
+On-premise deployment: Organizations can run the system inside their network with PostgreSQL and private document storage, avoiding external API transfer.
+
+Cost: Local operation is free. Production cost depends on storage, users, traffic, database size, hosting, and model choice.
+
+Privacy: Current protections include UUID filenames, private storage, file validation, source-linked evidence, and no mandatory external AI API. Production should add authentication, HTTPS, encryption, malware scanning, retention policies, audit logs, and workspace isolation.
+
+Responsible AI: TenderLens does not claim legal eligibility, does not treat similarity as proof, preserves source references, returns needs_review for ambiguity, and requires human decisions for final evidence confirmation.
+
+11.3 Limitations
+
+1. Retrieval currently uses lexical overlap rather than semantic embeddings.
+2. The current MVP focuses mainly on English PDFs.
+3. OCR is detected but not yet integrated.
+4. The evaluation set currently contains six cases.
+5. The application does not provide legal advice or guarantee eligibility.
+6. Authentication and multi-user access are not yet implemented.
+7. PostgreSQL deployment configuration remains future hardening work.
+8. Complex amendment rewording may require human confirmation.
+9. The mock provider is deterministic and is not equivalent to a production LLM.
+
+11.4 Future work
+
+1. Add Tesseract or PaddleOCR for scanned PDFs.
+2. Add multilingual semantic retrieval using Sentence Transformers, multilingual-e5, or BGE-M3.
+3. Add local Ollama model support.
+4. Add Hindi and other Indian-language workflows.
+5. Expand the evaluation dataset to at least 30 to 50 labeled cases.
+6. Add authentication, roles, workspace isolation, and audit history.
+7. Add PostgreSQL deployment and formal Alembic migrations.
+8. Improve amendment comparison with clause numbering, semantic similarity, and table comparison.
+9. Add branded reports, filters, signatures, Excel export, and report versioning.
+
+11.5 Conclusion
+
+TenderLens is an industry-relevant AI project that addresses a real business problem for Indian MSMEs. It combines PDF processing, deterministic NLP, evidence retrieval, rule-based validation, human review, amendment analysis, and report generation in a free and local-first architecture. The implemented MVP has passed backend and frontend tests, supports live API workflows, and provides JSON, CSV, and PDF outputs. Its conservative design prioritizes traceability and human control over unsupported automation. The next major academic improvement is to expand the evaluation set and collect real user feedback.
