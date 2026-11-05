@@ -74,3 +74,50 @@ Run the deterministic NLP evaluation baseline from `backend/`:
 ```powershell
 .\.venv\Scripts\python.exe -m app.evaluation
 ```
+
+## Demo deployment
+
+The repository includes a demo deployment path with the React frontend on
+Vercel and the FastAPI backend on Render.
+
+### 1. Deploy the backend to Render
+
+1. Push this repository to GitHub.
+2. In Render, choose **New + > Blueprint** and select the repository.
+3. Render will detect [`render.yaml`](./render.yaml) and build the backend from
+   [`backend/Dockerfile`](./backend/Dockerfile).
+4. After the service is created, copy its public URL, for example
+   `https://tenderlens-api.onrender.com`.
+5. In the Render service environment, set `FRONTEND_ORIGIN` to the final
+   Vercel URL. For the first deployment, a temporary value can be used and
+   updated after Vercel is created.
+
+The API health check is:
+
+```text
+https://<render-service>.onrender.com/api/v1/health
+```
+
+### 2. Deploy the frontend to Vercel
+
+1. In Vercel, import the same GitHub repository.
+2. Set **Root Directory** to `frontend`.
+3. Use `npm run build` as the build command and `dist` as the output directory.
+4. Add this environment variable:
+
+```text
+VITE_API_BASE_URL=https://<render-service>.onrender.com/api/v1
+```
+
+5. Deploy the site and copy its public URL.
+6. Return to Render and set `FRONTEND_ORIGIN` to that Vercel URL, then
+   redeploy the backend.
+
+### Demo limitations
+
+The included Render configuration uses SQLite and local file storage so the
+MVP can be demonstrated without a database service. Render's free service
+filesystem is not durable: database records and uploaded PDFs can disappear
+after restarts or redeployments. For a real online deployment, move the
+database to managed PostgreSQL and uploads to durable object storage (such as
+Azure Blob Storage or S3-compatible storage) before storing user data.
